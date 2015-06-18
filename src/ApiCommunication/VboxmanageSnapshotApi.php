@@ -38,20 +38,18 @@ class VboxmanageSnapshotApi implements SnapshotApiInterface {
         $this->vboxmanage('snapshot ' . escapeshellarg($vm->uuid) . ' list --machinereadable', $snapshots);
         $rootSnapshot = null;
         $parsedSnapshots = [];
-        for ($i = 0; $i < count($snapshots); $i += 2) {
+        for ($i = 0; ; ) {
             if (preg_match('/^CurrentSnapshotNode="(.+)"$/', $snapshots[$i + 2], $matchesCurrent)) {
                 $current = $matchesCurrent[1];
                 break;
             }
-            if (!preg_match('/^(SnapshotName.*)="(.+)"$/', $snapshots[$i], $matchesName)) {
-                throw new LogicException("Invalid VM string from vboxmanage '$snapshots[$i]'.");
+            list($name, $path) = $this->expectSnapshotValue('Name', $snapshots[$i++]);
+            list($uuid) = $this->expectSnapshotValue('UUID', $snapshots[$i++]);
+            
+            if ($this->expectSnapshotValue('Description', $snapshots[$i], false) !== false) {
+                ++$i;
             }
-            $name = $matchesName[2];
-            $path = $matchesName[1];
-            if (!preg_match('/^SnapshotUUID(.*)="(.+)"$/', $snapshots[$i + 1], $matchesUuid)) {
-                throw new LogicException("Invalid VM string from vboxmanage '${snapshots[$i + 1]}'.");
-            }
-            $uuid = $matchesUuid[2];
+            
             $parsedSnapshots[$path] = new Snapshot($vm, $name, $uuid, false);
             if (preg_match('/^(.+)\-\d+$/', $path, $matchesParent)) {
                 $parsedSnapshots[$matchesParent[1]]->children[] = $parsedSnapshots[$path];
@@ -94,6 +92,16 @@ class VboxmanageSnapshotApi implements SnapshotApiInterface {
             throw new \RuntimeException("The vboxmanage command '$execCommand' returned $returnValue.");
         }
         return $returnValue;
+    }
+    
+    private function expectSnapshotValue($value, $subject, $throw = true) {
+        if (!preg_match('/^(Snapshot'.$value.'.*)="(.*)"$/', $subject, $matches)) {
+            if ($throw) {
+                throw new \RuntimeException("Expected '$value' in '$subject'.");
+            }
+            return false;
+        }
+        return [$matches[2], $matches[1]];
     }
 
 }
