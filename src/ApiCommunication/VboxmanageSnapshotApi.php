@@ -83,6 +83,7 @@ class VboxmanageSnapshotApi implements SnapshotApiInterface {
             throw new \RuntimeException('Can not delete a snapshot with multiple children.');
         }
         $this->vboxmanage(sprintf('snapshot %s delete %s 2>&1', $snapshot->vm->uuid, $snapshot->uuid));
+        sleep(2); // give virtualbox some time, maybe parse some status instead?
     }
 
     private function vboxmanage($command, &$output = null) {
@@ -95,7 +96,7 @@ class VboxmanageSnapshotApi implements SnapshotApiInterface {
     }
     
     private function expectSnapshotValue($value, $subject, $throw = true) {
-        if (!preg_match('/^(Snapshot'.$value.'.*)="(.*)"$/', $subject, $matches)) {
+        if (!preg_match('/^(Snapshot' . $value . '.*)="(.*)"$/', $subject, $matches)) {
             if ($throw) {
                 throw new \RuntimeException("Expected '$value' in '$subject'.");
             }
