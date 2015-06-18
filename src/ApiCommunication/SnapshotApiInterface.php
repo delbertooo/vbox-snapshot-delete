@@ -25,9 +25,8 @@ interface SnapshotApiInterface {
     function findVirtualMachines();
 
     /**
-     * 
      * @param VirtualMachine $vm The VM to find snapshots of.
-     * @return Snapshot All Snapshots.
+     * @return Snapshot The root snapshot containing all other snapshots as children.
      */
     function findSnapshots(VirtualMachine $vm);
     
