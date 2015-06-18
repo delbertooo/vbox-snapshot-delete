@@ -119,7 +119,7 @@ class RangeCommand extends Command {
             return;
         }
         foreach ($snapshot->children as $child) {
-            $this->outputSnapshot($output, $child, $enumeration, $maxChildren, $indent . '   ');
+            $this->outputSnapshot($output, $child, $enumeration, $maxChildren, $indent . '  ');
         }
     }
     
