@@ -11,7 +11,7 @@
 
 namespace Delbertooo\VirtualBox\SnapshotDelete\Console\Command;
 
-use Delbertooo\VirtualBox\SnapshotDelete\ApiCommunication\VboxmanageSnapshotApi;
+use Delbertooo\VirtualBox\SnapshotDelete\ApiCommunication\Vboxmanage\VboxmanageSnapshotApi;
 use Delbertooo\VirtualBox\SnapshotDelete\Model\Snapshot;
 use RuntimeException;
 use Symfony\Component\Console\Command\Command;
@@ -114,7 +114,7 @@ class RangeCommand extends Command {
             return;
         }
         $enumeration[] = $snapshot;
-        $output->writeln(sprintf("<info>% 4d</info>: $indent$snapshot->name <comment>(UUID: $snapshot->uuid)</comment>", count($enumeration)));
+        $output->writeln(sprintf("<info>% 4d</info>: $indent$snapshot->name%s <comment>(UUID: $snapshot->uuid)</comment>", count($enumeration), $snapshot->active ? ' (*)' : ''));
         if (empty($snapshot->children)) {
             return;
         }

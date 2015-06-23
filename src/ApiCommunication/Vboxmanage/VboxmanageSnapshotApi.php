@@ -9,7 +9,7 @@
  * with this source code in the file LICENSE.
  */
 
-namespace Delbertooo\VirtualBox\SnapshotDelete\ApiCommunication;
+namespace Delbertooo\VirtualBox\SnapshotDelete\ApiCommunication\Vboxmanage;
 
 use Delbertooo\VirtualBox\SnapshotDelete\ApiCommunication\SnapshotApiInterface;
 use Delbertooo\VirtualBox\SnapshotDelete\Model\Snapshot;
@@ -37,19 +37,22 @@ class VboxmanageSnapshotApi implements SnapshotApiInterface {
     public function findSnapshots(VirtualMachine $vm) {
         $this->vboxmanage('snapshot ' . escapeshellarg($vm->uuid) . ' list --machinereadable', $snapshots);
         $rootSnapshot = null;
+        $parser = new SnapshotListParser($snapshots);
         $parsedSnapshots = [];
-        for ($i = 0; ; ) {
-            if (preg_match('/^CurrentSnapshotNode="(.+)"$/', $snapshots[$i + 2], $matchesCurrent)) {
-                $current = $matchesCurrent[1];
-                break;
+        while ($parser->hasMoreLines()) {
+            if ($parser->currentLineIs('CurrentSnapshotName')) {
+                $parser->skipLine(); // skip name
+                $parser->skipLine(); // skip uuid
+                list($current) = $parser->readLine('CurrentSnapshotNode');
+                continue; // check if we are done
             }
-            list($name, $path) = $this->expectSnapshotValue('Name', $snapshots[$i++]);
-            list($uuid) = $this->expectSnapshotValue('UUID', $snapshots[$i++]);
-            
-            if ($this->expectSnapshotValue('Description', $snapshots[$i], false) !== false) {
-                ++$i;
+            list($name, $path) = $parser->readLine('SnapshotName');
+            list($uuid) = $parser->readLine('SnapshotUUID');
+
+            if ($parser->currentLineIs('SnapshotDescription')) {
+                $parser->skipLine(); // description
             }
-            
+
             $parsedSnapshots[$path] = new Snapshot($vm, $name, $uuid, false);
             if (preg_match('/^(.+)\-\d+$/', $path, $matchesParent)) {
                 $parsedSnapshots[$matchesParent[1]]->children[] = $parsedSnapshots[$path];
@@ -93,16 +96,6 @@ class VboxmanageSnapshotApi implements SnapshotApiInterface {
             throw new \RuntimeException("The vboxmanage command '$execCommand' returned $returnValue.");
         }
         return $returnValue;
-    }
-    
-    private function expectSnapshotValue($value, $subject, $throw = true) {
-        if (!preg_match('/^(Snapshot' . $value . '.*)="(.*)"$/', $subject, $matches)) {
-            if ($throw) {
-                throw new \RuntimeException("Expected '$value' in '$subject'.");
-            }
-            return false;
-        }
-        return [$matches[2], $matches[1]];
     }
 
 }
