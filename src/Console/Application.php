@@ -24,7 +24,7 @@ class Application extends BaseApplication {
      */
     public function __construct() {
         error_reporting(-1);
-        parent::__construct('VirtualBox Snapshot Delete', '1.0.0');
+        parent::__construct('VirtualBox Snapshot Delete', '1.0.1');
         $this->add(new RangeCommand());
     }
 
